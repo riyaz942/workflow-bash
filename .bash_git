@@ -1,0 +1,142 @@
+#!C:\Program Files\Git\usr\bin bash
+
+git_commit(){
+# the $# list the number of parameters passed 
+# the [ $# -eq 0 ] checks if the length of the arguments is 0
+# here the arugments is the commit message so the user doesnt have to put double quots while giving messages
+# example :- gcm commit message here 
+if [ $# -eq 0 ]; then
+    echo "No commit message provided"
+else
+  str="$*"
+  # the "$*" takes the arguments and puts it in a string
+  #echo $str
+  if [ -d "tasks" ]; then
+  	  if [ "${str: -1}" = "." ]; then
+	  	  echo -e "$str" >> tasks/commits.txt	  	  
+  	  fi
+
+	  if [ -f "tasks/taskId.txt" ]; then #checks if the file exists
+		task=$(<tasks/taskId.txt) #puts the content of the file in the task variable
+		str="$task $str" #prepends the data in the comment message	  	
+	  fi  	
+  fi
+  git commit -m "$str"  
+fi
+}
+
+
+#this function is the aggregate of 2 commands "git add ." and "git commit" so the user can use one command to "add" and commit  
+#example :- ga-cm commit message here 
+#the above example is equvalent to :
+# git add .
+# git commit -m "commit message here"
+git_add_commit(){
+git add .
+git_commit "$@"
+}
+
+#This function automatically takes the branch name and adds that to the "git push" command, so no need to specify branch name
+git_push(){
+  branch_name=$(git rev-parse --symbolic-full-name --abbrev-ref HEAD)
+  input="$@"
+  stripedInput="$(echo -e "${input}" | tr -d '[:space:]')"
+  if [ "$stripedInput" != "ignore" ]; then
+    if [ -d "tasks" ]; then #check if directory exists
+	  if [ -f "tasks/commits.txt" ]; then #checks if the file exists
+	  	projectName=$(<tasks/projectName.txt)
+		commits=$(<tasks/commits.txt) #puts the content of the file in the commits variable
+		#commits=awk '{$commits=$commits};1'	$experiment removing leading and trailing space
+		#commits="$(echo -e "${commits}" | tr -d '[:space:]')"		#trims white space
+
+		if [ -z "$commits" ];then
+			echo "Commits are empty not posting anything"
+		else
+			update "$projectName $commits"
+			echo "" > tasks/commits.txt #empties the file after updating
+		fi
+	  fi
+  	fi
+  fi
+  git push origin "${branch_name}"
+}
+
+#This function automatically takes the branch name and adds that to the "git pull" command, so no need to specify branch name
+git_pull(){
+ branch_name=$(git rev-parse --symbolic-full-name --abbrev-ref HEAD)
+ git pull origin "${branch_name}"
+}
+
+#This function is the aggregate of 2 functions "git commit" and "git push"
+git_commit_push(){
+git_add_commit "$@"
+git_push
+}
+
+
+git_stash_save(){
+if [ $# -eq 0 ]; then
+    echo "No stash save message provided"
+else
+  str="$*"
+  git stash save "$str"
+  chmod -R 777 .
+fi
+}
+
+git_stash(){
+git stash
+chmod -R 777 .
+}
+
+git_diff(){
+	if [ $# -eq 0 ]; then
+		echo "Provide a number from the uncommited changes file list"
+	else
+		str="$*"
+		files=`git diff --name-only` #files=`git diff --name-only | grep -E '.php$' `
+
+		INDEX=0
+		for file in $files; do
+		    if [ $str -eq $INDEX ]; then 
+		 		git diff "$file"
+		 		break
+		 	fi
+		    let INDEX=${INDEX}+1
+		done
+	fi	
+}
+
+
+#-------------------------------------------------------Aliases -----------------------------------------------------
+#alias edit-bash=“open ~/.bash_profile”
+
+#Git related alias
+alias gl="git log --pretty=format:'%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%cn]' --decorate --numstat"	#git log with pretty log messages
+#find your log type: http://durdn.com/blog/2012/11/22/must-have-git-aliases-advanced-examples/
+alias ga="git add ."	#simple git add . //to add all files
+alias gcm="git_commit"		#simple git commit // example :- gcm commit message here without double quotes
+alias gb="git branch"		#simple git branch //example :-gb
+alias gc="git checkout $@" #simple git checkout // example :- gc branch_name
+alias gc-b="git checkout -b $@" #simple git checkout with -b (to create new branch) // example:- gc-b new_branch_name
+alias gm="git merge $1"	#simple git merge // example:- gm merge_branch_name
+alias gsh="git_stash"      #simple git stash
+alias gsh-l="git stash list" 	#simple git stash list
+alias gpl="git_pull"       #simple git pull which pulls from origin of the current branch
+alias gsh-s="git_stash_save $@"    #saves stash with message  //example:- gsh stash message without quotes
+alias gp="git_push"		#It pushes to origin on current branch automatically no need to specify branch name
+alias ga-cm="git_add_commit $@"	#adds files then commits
+alias gcm-p="git_commit_push $@" #adds files then commits then pushes
+alias g-save-c="git config credential.helper store" # saves user credentials so you dont have to type your password every time while pushing or pulling from origin
+alias g-conflicts="git ls-files -u"
+alias gd="git_diff $@"
+alias g-delete="git branch -d $@"
+alias g-delete-f="git branch -D $@"
+alias g-delete-origin="git push origin --delete $@"
+alias g-remove-cache="git rm -r --cached . "
+
+# Show the diff between the latest commit and the current state
+#alias gd="git diff-index --quiet HEAD -- || clear; git --no-pager diff --patch-with-stat"
+
+# Find branches containing commit
+alias gfb="!f() { git branch -a --contains $1; }; f"
