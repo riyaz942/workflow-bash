@@ -1,7 +1,7 @@
 #!C:\Program Files\Git\usr\bin bash
 
 #Functions for the alias
-subl(){
+subl() {
 	if [ $# -eq 0 ]; then
 		open -a 'Sublime Text'
 	else
