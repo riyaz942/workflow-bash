@@ -4,6 +4,7 @@ Some bash alias commands to make your workflow simpler
 
 Some command examples :-
 
+```
 -> git add .
 -> git commit -m "commit message here"
 => ga-cm commit message here
@@ -33,5 +34,6 @@ Some command examples :-
 -> git rm -r --cached .
 => git-remove-cache
 
+```
 
 Checkout .bash_git for more commands
